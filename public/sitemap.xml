@@ -3,23 +3,23 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://frqc.github.io/post/init/</loc>
+    <loc>https://frqc.github.io/posts/init/</loc>
   </url>
   
   <url>
-    <loc>https://frqc.github.io/post/pillow_usage/</loc>
+    <loc>https://frqc.github.io/posts/pillow_usage/</loc>
   </url>
   
   <url>
-    <loc>https://frqc.github.io/post/tf/</loc>
+    <loc>https://frqc.github.io/posts/tf/</loc>
   </url>
   
   <url>
-    <loc>https://frqc.github.io/post/tf_2/</loc>
+    <loc>https://frqc.github.io/posts/tf_2/</loc>
   </url>
   
   <url>
-    <loc>https://frqc.github.io/post/tf_3/</loc>
+    <loc>https://frqc.github.io/posts/tf_3/</loc>
   </url>
   
   <url>
@@ -28,7 +28,7 @@
   </url>
   
   <url>
-    <loc>https://frqc.github.io/post/</loc>
+    <loc>https://frqc.github.io/posts/</loc>
     <priority>0</priority>
   </url>
   
