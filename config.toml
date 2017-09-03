@@ -1,4 +1,5 @@
 baseURL = "http://example.org/"
 languageCode = "en-us"
-title = "My New Hugo Site"
+title = "Tim's ER"
 theme = "hugo_theme_pickles"
+canonifyurls = true
