@@ -3,7 +3,32 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://frqc.github.io/post/init/</loc>
+  </url>
+  
+  <url>
+    <loc>https://frqc.github.io/post/pillow_usage/</loc>
+  </url>
+  
+  <url>
+    <loc>https://frqc.github.io/post/tf/</loc>
+  </url>
+  
+  <url>
+    <loc>https://frqc.github.io/post/tf_2/</loc>
+  </url>
+  
+  <url>
+    <loc>https://frqc.github.io/post/tf_3/</loc>
+  </url>
+  
+  <url>
     <loc>https://frqc.github.io/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://frqc.github.io/post/</loc>
     <priority>0</priority>
   </url>
   
