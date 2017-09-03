@@ -1,4 +1,4 @@
-baseURL = "https://frqc.github.io/blog"
+baseURL = "https://frqc.github.io"
 languageCode = "en-us"
 title = "Tim's ER"
 theme = "hugo_theme_pickles"
