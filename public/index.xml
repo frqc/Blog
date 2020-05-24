@@ -1,0 +1,22 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Tim&#39;s Blog on Tim&#39;s Blog </title>
+      <generator uri="https://gohugo.io">Hugo</generator>
+    <link>http://blog.frqc.info/</link>
+    <language>en-us</language>
+    
+    
+    <updated>Sun, 24 May 2020 18:16:18 EDT</updated>
+    
+    <item>
+      <title>Posts</title>
+      <link>http://blog.frqc.info/post/</link>
+      <pubDate>Sun, 24 May 2020 18:16:18 EDT</pubDate>
+      
+      <guid>http://blog.frqc.info/post/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
+
