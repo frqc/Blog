@@ -1,0 +1,8 @@
+{{ $data := $.Page.Site.Data.code }}
+{{ $codes := index $data (.Get 1) }}
+{{ $code := index $codes (.Get 2) }}
+
+<div class="named-code">
+  <span class="named-code-name">{{ .Get 2 }}</span>
+  {{ highlight $code (.Get 0) "classprefix=pyg-" }}
+</div>

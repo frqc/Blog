@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+
+from __future__ import absolute_import, division, print_function
+
+import argparse
+from collections import defaultdict
+import os
+import os.path as path
+import re
+import shutil
+
+
+CARGO_TOML = '''
+[package]
+name = "{post_name}"
+version = "0.1.0"
+authors = ["Andrew Gallant <jamslam@gmail.com>"]
+
+[dependencies]
+fst = "0.3"
+fst-levenshtein = "0.2"
+fst-regex = "0.2"
+'''
+
+RE_RUST_CODE = re.compile(r'^{{< code-rust "(?P<name>[^"]+)"[^>]*>}}'
+                          r'(?P<code>.+?)'
+                          r'{{< /code-rust >}}',
+                          re.DOTALL | re.MULTILINE)
+
+
+def tweak_code(code):
+    if 'fn main()' not in code:
+        code = code.replace('\n', '\n  ')
+        code = u'''
+use std::error::Error;
+
+fn main2() -> Result<(), Box<Error+Send+Sync>> {
+    %s
+    Ok(())
+}
+
+fn main() {
+    main2().unwrap();
+}
+''' % code.strip()
+    code = '''
+#![allow(dead_code, unused_imports, unused_macros, unused_variables)]
+extern crate fst;
+extern crate fst_levenshtein;
+extern crate fst_regex;
+''' + code
+    return code.strip()
+
+
+if __name__ == '__main__':
+    p = argparse.ArgumentParser()
+    p.add_argument('post')
+    args = p.parse_args()
+
+    # It's easier to just not try to compile some things.
+    ignore = {'questionmark-def'}
+
+    post_name = path.splitext(path.basename(args.post))[0]
+    post = open(args.post).read()
+    code_dir = path.join('code', post_name)
+    src_bin_dir = path.join(code_dir, 'src', 'bin')
+
+    if os.access(src_bin_dir, os.R_OK):
+        shutil.rmtree(src_bin_dir)
+        os.mkdir(src_bin_dir)
+    if not os.access(code_dir, os.R_OK):
+        os.mkdir(code_dir)
+        os.mkdir(path.join(code_dir, 'src'))
+        os.mkdir(path.join(code_dir, 'src', 'bin'))
+        print('target', file=open(path.join(code_dir, '.gitignore'), 'w+'))
+        print(CARGO_TOML.format(post_name=post_name),
+              file=open(path.join(code_dir, 'Cargo.toml'), 'w+'))
+
+    samples = defaultdict(str)
+    for m in RE_RUST_CODE.finditer(post):
+        if m.group('name') in ignore:
+            continue
+        samples[m.group('name')] += m.group('code')
+    for name, code in samples.items():
+        src_path = path.join(code_dir, 'src', 'bin', u'%s.rs' % name)
+        print(tweak_code(code), file=open(src_path, 'w+'))
