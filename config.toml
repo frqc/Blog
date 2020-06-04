@@ -1,9 +1,0 @@
-baseURL = "http://blog.frqc.info"
-languageCode = "en-us"
-title = "Tim's Blog"
-pygmentsUseClasses = true
-pygmentsUseClassic = false
-
-[params]
-author = "Tim"
-description = "Code and blog"

@@ -6,10 +6,20 @@
     <description>Recent content in Posts on Tim&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 24 May 2020 18:16:18 -0400</lastBuildDate>
+    <lastBuildDate>Tue, 02 Jun 2020 18:16:18 -0400</lastBuildDate>
     
 	<atom:link href="http://blog.frqc.info/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>How to Read Rust Docs</title>
+      <link>http://blog.frqc.info/post/how-to-read-rust-docs/</link>
+      <pubDate>Tue, 02 Jun 2020 18:16:18 -0400</pubDate>
+      
+      <guid>http://blog.frqc.info/post/how-to-read-rust-docs/</guid>
+      <description>&lt;h1 id=&#34;introduction&#34;&gt;Introduction&lt;/h1&gt;
+&lt;p&gt;I&amp;rsquo;ve been learning rust on-and-off for a while. One major challenge of learning Rust is that &lt;strong&gt;I find it hard to read  documents on &lt;a href=&#34;https://docs.rs/&#34;&gt;docs.rs&lt;/a&gt;&lt;/strong&gt;. Many times I ended up with a code snippet from the cookbook or some quick tutiorial. It works but I was expecting more help from the official documentations.&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>First blog</title>

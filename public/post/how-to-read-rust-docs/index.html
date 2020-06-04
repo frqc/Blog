@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>How to Read Rust Docs - Tim&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <meta name="description" content="Code and blog">
+  
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <link rel="canonical" href="http://blog.frqc.info/post/how-to-read-rust-docs/">
+
+  
+  <link rel="stylesheet" type="text/css" href="http://blog.frqc.info/css/basscss.css">
+  <link rel="stylesheet" type="text/css" href="http://blog.frqc.info/css/main.css">
+  <link rel="stylesheet" type="text/css" href="http://blog.frqc.info/css/chroma-fruity-light.css">
+  <link rel="stylesheet" type="text/css" href="http://blog.frqc.info/css/override.css">
+</head>
+<body class="">
+
+<div class="site-wrap">
+  <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="http://blog.frqc.info/" class="site-title">Tim&#39;s Blog</a>
+      <nav class="site-nav right">
+      <a href="/about/">About</a>
+<a href="/projects/">Projects</a>
+<a href="https://github.com/frqc">GitHub</a>
+
+      </nav>
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</header>
+
+  <div class="post p2 p-responsive wrap" role="main">
+    <div class="measure">
+      <div class="post-header mb2">
+        <h1>How to Read Rust Docs</h1>
+        <span class="post-meta">Jun 2, 2020</span><br>
+        
+      </div>
+
+      <article class="post-content">
+      <h1 id="introduction">Introduction</h1>
+<p>I&rsquo;ve been learning rust on-and-off for a while. One major challenge of learning Rust is that <strong>I find it hard to read  documents on <a href="https://docs.rs/">docs.rs</a></strong>. Many times I ended up with a code snippet from the cookbook or some quick tutiorial. It works but I was expecting more help from the official documentations.</p>
+<p>For example, say I want to generate a random number. I search &lsquo;rust random int&rsquo; and the first result is from the <a href="https://rust-lang-nursery.github.io/rust-cookbook/algorithms/randomness.html">Rust Cookbook</a>, recommending <code>rand::thread_rng()::gen()</code>. I want to learn more about this function. From the <code>rand</code> frontpage the thing that I found related to this code is the function <code>thread_rng</code>, whose page says read more on its returned structure <code>ThreadRng</code> . Still there is no function named <code>gen</code> listed in the  structure <code>ThreadRng</code>'s page. I have to type <code>gen</code> in the search bar and finally its a function provided by trait <code>rand::Rng</code>.</p>
+<p>Of course <code>ThreadRng</code> implements this trait, at the bottom of its <a href="https://docs.rs/rand/0.7.3/rand/rngs/struct.ThreadRng.html#blanket-implementations">page</a> as a blanket implementation since the structure implements the super trait <code>RngCore</code>. The <a href="https://docs.rs/rand/0.7.3/rand/trait.Rng.html#method.gen">signature</a> of this <code>gen</code> function is</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">gen</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">T</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">Standard</span>: <span class="nc">Distribution</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w">
+</span></code></pre></div><p>Wow&hellip; what are <code>Standard</code> and <code>Distribution</code>? And as a newbie this signature just scares me and reminds me of the meme &ldquo;how to draw a horse&rdquo;, compared to the function signature demonstrated on the <a href="https://doc.rust-lang.org/book/ch03-03-how-functions-work.html">book</a>. I may just abort this journey and end up using the working code, which is not a pleasant journey in my opinion.</p>
+<p>In this blog I try to write down some difficulties that prevents me reading <a href="https://docs.rs/">docs.rs</a> fruently. Besides the function signature itself, I find to some extent the trait system hide the original intention of the design of  a structrue, making it difficult to understand the purpose of a given structure and its functionality.</p>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#how-to-read-a-rust-function">How to read a Rust function</a>
+<ul>
+<li><a href="#trait-system">Trait System</a>
+<ul>
+<li><a href="#simple-trait">Simple Trait</a></li>
+<li><a href="#trait-with-generic-type">Trait with Generic Type</a></li>
+<li><a href="#more-generic">More Generic!</a></li>
+</ul>
+</li>
+<li><a href="#common-traits">Common Traits</a>
+<ul>
+<li><a href="#sized-and-sized"><code>Sized</code> and <code>?Sized</code></a></li>
+<li><a href="#intoiterator-and-iterator"><code>IntoIterator</code> and <code>Iterator</code></a></li>
+<li><a href="#fn-fnmut-fnonce"><code>Fn</code>, <code>FnMut</code>, <code>FnOnce</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#some-function-doesnt-appear-inside-a-structure-its-trait-function">Some function doesn&rsquo;t appear inside a structure: it&rsquo;s trait function</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+<h1 id="how-to-read-a-rust-function">How to read a Rust function</h1>
+<p>First let&rsquo;s talk about functions. The function itself isn&rsquo;t too hard to understand. This <a href="https://brson.github.io/rust-anthology/1/reading-rust-function-signatures.html">blog</a> gives a nice introduction for signature reading. Sadly it doesn&rsquo;t talk much about the trait system which makes the function generic and a little bit <em>scary</em>. From my experience, when reading the signature, the complexity brought by the trait system comes from the co-existing ways to express same idea, along with the unfamiliarity of some common traits.</p>
+<h2 id="trait-system">Trait System</h2>
+<h3 id="simple-trait">Simple Trait</h3>
+<p>The trait system enables the parameters and return values to be some structures implemented specific traits. The following examples are taken from the <a href="https://doc.rust-lang.org/book/ch10-02-traits.html?highlight=summar#traits-as-parameters">book</a>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">notify</span><span class="o">&lt;</span><span class="n">T</span>: <span class="nc">Summary</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span>: <span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;Breaking news! {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="n">summarize</span><span class="p">());</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div><div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">notify</span><span class="p">(</span><span class="n">item</span>: <span class="nc">impl</span><span class="w"> </span><span class="n">Summary</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></code></pre></div><div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">notify</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span>: <span class="nc">T</span><span class="p">)</span><span class="w"> 
+</span><span class="w">		</span><span class="k">where</span><span class="w"> </span><span class="n">T</span>: <span class="nc">Summary</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span></code></pre></div><p>These three signatures have identical meaning. They all read as</p>
+<blockquote>
+<p><code>notify</code> is a public function that takes one parameter; the parameter should have implemented <code>Summary</code> trait</p>
+</blockquote>
+<p>The second one looks more concise in simple classes, while <a href="https://www.reddit.com/r/rust/comments/8ik620/notes_on_impl_trait/">some</a> argues it&rsquo;s not a good idea to use <code>impl</code> as a parameter boud. The third one is more common where are multiple parameters with multiple traits.</p>
+<h3 id="trait-with-generic-type">Trait with Generic Type</h3>
+<p>The trait enables generic programming, allowing one function taking mutiple type of parameter. It itself can also be generic, meaning a trait can be <em>defined for a bunch of types and implemented seperately for different types</em>. For example, if we define our trait in this way:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">SummaryInto</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">T</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div><p>then we could also make <code>notify</code> generic if <code>T</code> have implemented this trait. We can also specifically say we want <code>notify</code> accept <code>T</code> that implements the trait for <code>String</code>:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">notify</span><span class="p">(</span><span class="n">item</span>: <span class="nc">impl</span><span class="w"> </span><span class="n">SummaryInto</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="c1">// or use `where`
+</span><span class="c1"></span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">notify</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span>: <span class="nc">T</span><span class="p">)</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="nc">SummaryInto</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span></code></pre></div><p>Now it reads as</p>
+<blockquote>
+<p><code>notify</code> is a public function that takes one parameter; the parameter should have implemented <code>SummaryInto</code> trait for type <code>String</code></p>
+</blockquote>
+<p>This pattern is pretty common for trait <code>AsRef</code> in <code>std::fs</code> for <a href="https://doc.rust-lang.org/std/?search=asref">path related convension</a>. The idea is that if one type implement <code>AsRef&lt;Path&gt;</code> or <code>AsRef&lt;PathBuf&gt;</code> , which means it can be transformed into a reference to <code>Path</code> or <code>PathBuf</code>, then this type can passed into I/O related functions indicating the file path.</p>
+<h3 id="more-generic">More Generic!</h3>
+<p>As traits may accept different types, structures can also accept types to be Generic. This gives us the possibility for this:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">NewTweet</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">username</span>: <span class="nb">String</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">content</span>: <span class="nc">T</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">notify</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">U</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span>: <span class="nc">NewTweet</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">)</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">NewTweet</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span>: <span class="nc">SummaryInto</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span></code></pre></div><p>The function <code>notify</code> now reads</p>
+<blockquote>
+<p><em>a public function that takes one parameter; the perameter in type <code>NewTweet&lt;U&gt;</code> should have implemented <code>SummaryInto</code> trait for type <code>T</code></em>.</p>
+</blockquote>
+<p>Now the function signature for <code>gen</code> is less challenging:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">Rng</span>: <span class="nc">RngCore</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">gen</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">T</span><span class="w">
+</span><span class="w">    </span><span class="k">where</span><span class="w">
+</span><span class="w">        </span><span class="n">Standard</span>: <span class="nc">Distribution</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w">
+</span></code></pre></div><p>It is</p>
+<blockquote>
+<p><em>a function inside trait <code>Rng</code>, a subtrait of <code>RngCore</code>; this function returns a value in type <code>T</code> which strutcure <code>Standard</code> has implemented  <code>Distribution</code> for this type</em>.</p>
+</blockquote>
+<p>We are also confident to say <code>Standard</code> is a structure and <code>Distribution</code> is a trait which we proplably need to implement, if <code>T </code>  is some customized type.</p>
+<p>Yes, a foreign trait <code>Distribution</code> for a foreign structure <code>Standard</code>. This is doable as the orphal rule has been relaxed since <a href="https://blog.rust-lang.org/2020/01/30/Rust-1.41.0.html#relaxed-restrictions-when-implementing-traits">1.41.0</a> for the following pattern:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ForeignTrait</span><span class="o">&lt;</span><span class="n">LocalType</span><span class="o">&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">ForeignType</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div><p>The example implementation of <code>Distribution</code> demostrates this pattern perfectly:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="cp">#[derive(Debug)]</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">MyF32</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">x</span>: <span class="kt">f32</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Distribution</span><span class="o">&lt;</span><span class="n">MyF32</span><span class="o">&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Standard</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">sample</span><span class="o">&lt;</span><span class="n">R</span>: <span class="nc">Rng</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">rng</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">R</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">MyF32</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">MyF32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">x</span>: <span class="nc">rng</span><span class="p">.</span><span class="n">gen</span><span class="p">()</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div><p>But now you may wonder, what is <code>?Sized</code> ? I literally searched it for half an hour with my limited search skills involving question mark. To read Rust documentation fruently, it will be helpful if we know some common traits.</p>
+<h2 id="common-traits">Common Traits</h2>
+<h3 id="sized-and-sized"><code>Sized</code> and <code>?Sized</code></h3>
+<p>The <code>Sized</code> trait denotes some types have a known size. Since most rust structure has a known size, this trait is auto-implemented and Rust automatically add this trait for function parameters. For example,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">generic</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">t</span>: <span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></code></pre></div><p>is actually treated as:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">generic</span><span class="o">&lt;</span><span class="n">T</span>: <span class="nb">Sized</span><span class="o">&gt;</span><span class="p">(</span><span class="n">t</span>: <span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></code></pre></div><p>While it also implies that the parameter need to have a known size, there are also dynamically sized types(DST) in Rust: mainly slices and trait objects. To make a function work with DSTs, we need to add <code>?Sized</code> explicitly to tell the function to accept a type that may not have a known size, or not implementing the <code>Sized</code> trait. <code>?Sized</code> reads as “something may be sized”.</p>
+<p>This trait itself doesn&rsquo;t do much, so it is common to use with others:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">unsized_debug</span><span class="o">&lt;</span><span class="n">T</span>: <span class="nc">Debug</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span>: <span class="kp">&amp;</span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;displaying an unsized {:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">sized_debug</span><span class="o">&lt;</span><span class="n">T</span>: <span class="nc">Debug</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span>: <span class="kp">&amp;</span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;displaying an sized {:?}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div><p>Now <code>unsized_debug</code> works with types that may be sized, <code>sized_debug</code> works only with sized types. So,</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">unsized_debug</span><span class="p">(</span><span class="s">&#34;this is a debug info&#34;</span><span class="p">);</span><span class="w"> </span><span class="c1">// works as expected
+</span><span class="c1"></span><span class="n">sized_debug</span><span class="p">(</span><span class="s">&#34;this is a debug info&#34;</span><span class="p">);</span><span class="w"> </span><span class="c1">// compile error: doesn&#39;t have a size known at compile-time
+</span></code></pre></div><p>Slice like<code>[T]</code>  and  <code>str</code> is a dynamically-sized view into a contiguous sequence. It can be derived from a vector, acting like a borrowed iterator. String literals can also be viewed as a <code>Slice</code>. However, it&rsquo;s kind of confusing that the <code>&amp;T</code> is actually a sized pointer, even when <code>T</code> is slice. So</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w"></span><span class="n">unsized_debug</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">);</span><span class="w">  </span><span class="c1">// works as expected
+</span><span class="c1"></span><span class="n">sized_debug</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">);</span><span class="w">  </span><span class="c1">// works as expected
+</span></code></pre></div><p>One pratical example is opening a file. It will be convient if the <code>File::open </code> can accept string literal, i.e. <code>File::open(&quot;myfile.txt&quot;)</code>. This is done by these implenemtations (with auto coercion):</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">impl</span><span class="w"> </span><span class="nb">AsRef</span><span class="o">&lt;</span><span class="n">Path</span><span class="o">&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="o">&lt;</span><span class="na">&#39;_</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">U</span><span class="o">&gt;</span><span class="w"> </span><span class="nb">AsRef</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="o">&amp;</span><span class="na">&#39;_</span><span class="w"> </span><span class="n">T</span><span class="w">
+</span><span class="w"></span><span class="k">where</span><span class="w">
+</span><span class="w">    </span><span class="n">T</span>: <span class="nb">AsRef</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w"> </span><span class="c1">// here T is `str`
+</span><span class="c1"></span><span class="w">    </span><span class="n">U</span>: <span class="o">?</span><span class="nb">Sized</span><span class="p">,</span><span class="w">  </span><span class="c1">// and U is `Path`
+</span></code></pre></div><p>Another catagory of unsized type is trait objects. In common pratice is that it will be wrapped inside a <code>Box</code> or other container and used as a sized pointer. One pratical usage of <code>?Size</code> here to convert a structrue as trait object and then pass it to a generic function. The generic function will be dynamically dispatched for the given parameter, rather than statically dispatched and generate different code for during compile time.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="n">unsized_debug</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Debug</span><span class="p">);</span><span class="w"> </span><span class="c1">// works as expected
+</span><span class="c1"></span><span class="n">sized_debug</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Debug</span><span class="p">);</span><span class="w"> </span><span class="c1">// compile error: doesn&#39;t have a size known at compile-time
+</span></code></pre></div><p>Using dynamically dispatch will add overhead during the runtime since the type conversion is done in runtime, comparing to the static dispatch.</p>
+<p>In short, <code>?Size</code> can release the trait bound and accept unsized parameters like slices and trait objects, while some runtime overhead may be added.</p>
+<h3 id="intoiterator-and-iterator"><code>IntoIterator</code> and <code>Iterator</code></h3>
+<p>The iterator system in Rust may be more powerful than you expect! The <code>for</code> loop in Rust is actually based on trait <code>IntoIterator</code>: if a structure <code>values</code> implements <code>IntoIterator</code>, then we can use <code>for item in values{}</code>. Also if <code>values</code> has implements <code>Iterator</code>, then the trait <code>IntoIterator</code> can be automatically implmented as a blanket implementation.</p>
+<p>Another powerful thing about <code>Iterator</code> is that it has many functions that return a specialized or enhanced structure implemented <code>Iterator</code>. For example, function <code>enumerate</code> returns structure <code>Enumerate</code> whose item is <code>(index, orginal_item)</code>; <code>map</code> returns <code>Map</code>, <code>filter</code> returns <code>Filter</code> and <code>zip</code> returns <code>Zip</code>. These enhanced structures with <code>Iterator</code> trait enables the parttern of <em>combinator</em>, a way to write code like a chain, applying functions to one collection and passing the result as input for the next functions. We are calling functions from trait <code>Iterator</code>, which do jobs inside and return values implemented <code>Iterator</code>.  A common end for this chain is <code>collect</code>, which transforms an iterator into a collection.</p>
+<h3 id="fn-fnmut-fnonce"><code>Fn</code>, <code>FnMut</code>, <code>FnOnce</code></h3>
+<p>These three types are functions that take different paramters. <code>Fn</code> accepts immutable parameters, <code>FnOnce</code> takes  by-value parameters and <code>FnMut</code> takes mutable parameters. <code>FnOnce</code> is a supertrait of <code>FnMut</code> and <code>Fn</code> is a subtrait of <code>FnMut</code>. These traits are commonly seen in combinators like <code>std::iter::Iterator::map</code>, <code>std::result::Result::map</code> and <code>std::option::Option::and_then</code></p>
+<h1 id="some-function-doesnt-appear-inside-a-structure-its-trait-function">Some function doesn&rsquo;t appear inside a structure: it&rsquo;s trait function</h1>
+<p>Ok now we are less afraid of the function signature at least. The new challenge is somehow we may not find a function <code>bar</code> under a structure <code>foo</code>, even if we see <code>foo.bar()</code> somewhere else. Yep then it&rsquo;s trait function. The <code>foo</code> has implemented this trait, or <code>foo</code> satisified the trait bound and gets it for free, which is the case of <a href="https://doc.rust-lang.org/book/ch10-02-traits.html#using-trait-bounds-to-conditionally-implement-methods">blanket implementations</a>.</p>
+<blockquote>
+<p>If a structure implements a trait or this strutcure satisfies the trait&rsquo;s bound, it has all the functionality of this trait.</p>
+</blockquote>
+<p>While this idea sounds very reasonable, the Rust document only distinguish two kinds of trait of a given structure, implemented traits and blanket traits. The trait which defines your desired functionality can be in either location (or it&rsquo;s structure function not defined within a trait).</p>
+<p>Therefor to learn about a new functionality, you will probably start with the module-level documentation (which is not hard to find). Then if the module-level documentation states some key traits like <a href="https://doc.rust-lang.org/std/iter/index.html#iterator">std::iter</a>, you definitely need to scan these traits before jumping into structures. You learn what to expect if a struture implemented this trait and then structures inside this module can be unstanded more clearly and pleasantly, with the aware of the key traits along with other enhanced traits. Another way to identify the trait is to type the name of the desired function in the search bar, see if it belongs a structure or a trait.</p>
+<p>For other module whose functionality is more structure-related, I still think the key traits are the key to understand it. For example, inside the filesystem module <code>std::fs</code> you are very likely to manupile a structure wrapped upon a file handler. But the key traits in my opinion are <code>std::io::Read</code> and <code>std::io::Write</code>, along with other assistant traits like <code>AsRef&lt;Path&gt;</code> and <code>AsRef&lt;PathBuf&gt;</code>.</p>
+<p>Traits define the common behavior. Traits somehow works as the inheritance system in Rust. Traits are wonderful if you can find your desired traits among  <code>Copy</code>, <code>ToOwned</code>  and many other common traits when reading the document. The structure in Rust is not the class in Java, especially the document for structure doesn&rsquo;t list all the function they have. Many useful functions are behind traits that a structure has implemented.</p>
+<p>To summerize, try to find the key trait from the module-level documentation first and read the rest document with the awared of these traits. You will find the document more helpful.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>The function signature may look scary but it&rsquo;s not that hard if you walk through it patiently. For some foreign traits and structures, it will be helpful to summarize their functionality in one sentense first, and that put these sentenses in a compound sentence to describe the function.</p>
+<p>The trait system is the way Rust does generic programming and inheritance. Many module have some key traits. Read the document with the aware of the key triats will be very helpful.</p>
+<p>Also, could you guess which trait the <code>iter()</code> and <code>iter_mut()</code> belong to? :)</p>
+      </article>
+
+      
+
+    </div>
+  </div>
+</div>
+    <footer class="footer">
+      <div class="p2 wrap">
+        <div class="measure mt1 center">
+      <nav class="social-icons icons">
+<a class="fa fa-rss rss" href="/index.xml"></a>
+
+</nav>
+
+          <small>
+            All content is dual licensed under the UNLICENSE and MIT licenses.<br>
+            Powered by <a href="http://gohugo.io/" target="_blank">Hugo</a> &amp; <a href="https://github.com/azmelanar/hugo-theme-pixyll" target="_blank">Pixyll</a>
+          </small>
+        </div>
+      </div>
+    </footer>
+</body>
+</html>
+
